@@ -1,27 +1,24 @@
 import streamlit as st
 import joblib
 import pandas as pd
+import matplotlib.pyplot as plt
 
-"""
-========================================
-APP: CREDIT RISK PREDICTION
-========================================
-
-Aplicación interactiva para predecir
-la probabilidad de incumplimiento de un cliente.
-"""
+# config
+st.set_page_config(page_title="Credit Risk App", layout="centered")
 
 # cargar modelo
 model = joblib.load("modelo.pkl")
 
-st.title("Credit Risk Prediction App")
+# título
+st.title("🏦 Credit Risk Scoring Tool")
+st.markdown("Predict the probability of customer default based on financial behavior.")
 
 st.write("Enter customer information:")
 
 # inputs
 customer_age = st.number_input("Customer Age", 18, 100)
-monthly_income = st.number_input("Monthly Income", 0, 20000)
-total_debt = st.number_input("Total Debt", 0, 20000)
+monthly_income = st.number_input("Monthly Income ($)", 0, 20000, step=100)
+total_debt = st.number_input("Total Debt ($)", 0, 20000, step=100)
 active_loans_count = st.number_input("Active Loans Count", 0, 20)
 delinquency_count = st.number_input("Delinquency Count", 0, 10)
 
@@ -43,12 +40,58 @@ if st.button("Predict"):
 
     prob = model.predict_proba(input_data)[0, 1]
 
-    st.subheader(f"Default Probability: {prob:.2f}")
+    # 🔹 1. Probabilidad
+    st.subheader(f"Default Probability: {prob*100:.1f}%")
 
-    # interpretación
+    # 🔹 2. Barra visual
+    st.progress(float(prob))
+
+    # 🔹 3. Clasificación
     if prob > 0.7:
         st.error("🔴 High Risk")
     elif prob > 0.4:
         st.warning("🟡 Medium Risk")
     else:
         st.success("🟢 Low Risk")
+
+    # 🔹 4. Métrica (pro)
+    st.metric(
+        label="Risk Score",
+        value=f"{prob*100:.1f}%",
+        delta="High Risk" if prob > 0.7 else "Medium Risk" if prob > 0.4 else "Low Risk"
+    )
+
+    # 🔹 5. Gráfico perfil cliente
+    st.subheader("Customer Financial Profile")
+
+    features = {
+        "Income": monthly_income,
+        "Debt": total_debt,
+        "Loans": active_loans_count,
+        "Delinquencies": delinquency_count
+    }
+
+    fig, ax = plt.subplots()
+    ax.bar(features.keys(), features.values())
+    ax.set_title("Customer Profile")
+
+    st.pyplot(fig)
+
+    # 🔹 6. Gauge simple de riesgo
+    st.subheader("Risk Visualization")
+
+    fig2, ax2 = plt.subplots()
+    ax2.barh(
+        ["Risk"],
+        [prob],
+        color="red" if prob > 0.7 else "orange" if prob > 0.4 else "green"
+    )
+    ax2.set_xlim(0, 1)
+
+    st.pyplot(fig2)
+
+    # 🔹 7. Explicación (muy pro)
+    st.write(
+        "This score estimates the likelihood that a customer will default "
+        "based on financial behavior patterns."
+    )
