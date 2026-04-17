@@ -10,7 +10,7 @@ st.set_page_config(page_title="Credit Risk App", layout="centered")
 model = joblib.load("modelo.pkl")
 
 # título
-st.title("🏦 Credit Risk Scoring Tool")
+st.title("Credit Risk Scoring Tool")
 st.markdown("Predict the probability of customer default based on financial behavior.")
 
 st.write("Enter customer information:")
@@ -29,6 +29,7 @@ employment_type = st.selectbox(
 
 # predicción
 if st.button("Predict"):
+    
     input_data = pd.DataFrame([{
         "customer_age": customer_age,
         "monthly_income": monthly_income,
@@ -40,13 +41,13 @@ if st.button("Predict"):
 
     prob = model.predict_proba(input_data)[0, 1]
 
-    # 🔹 1. Probabilidad
+    # 1. Probabilidad
     st.subheader(f"Default Probability: {prob*100:.1f}%")
 
-    # 🔹 2. Barra visual
+    # 2. Barra visual
     st.progress(float(prob))
 
-    # 🔹 3. Clasificación
+    # 3. Clasificación
     if prob > 0.7:
         st.error("🔴 High Risk")
     elif prob > 0.4:
@@ -54,30 +55,48 @@ if st.button("Predict"):
     else:
         st.success("🟢 Low Risk")
 
-    # 🔹 4. Métrica (pro)
+    # 4. Métrica 
     st.metric(
         label="Risk Score",
         value=f"{prob*100:.1f}%",
         delta="High Risk" if prob > 0.7 else "Medium Risk" if prob > 0.4 else "Low Risk"
     )
 
-    # 🔹 5. Gráfico perfil cliente
+    # 5. Gráfico perfil cliente
     st.subheader("Customer Financial Profile")
 
-    features = {
+    # Variables financieras (dinero)
+    financial_features = {
         "Income": monthly_income,
-        "Debt": total_debt,
+        "Debt": total_debt
+    }
+    
+    fig1, ax1 = plt.subplots(figsize=(5,3))
+    ax1.bar(financial_features.keys(), financial_features.values())
+    ax1.set_title("Financial Overview ($)")
+    ax1.set_ylabel("Amount ($)")
+
+    #2. Variables de comportamiento (conteos)
+    behavior_features = {
         "Loans": active_loans_count,
         "Delinquencies": delinquency_count
     }
 
-    fig, ax = plt.subplots()
-    ax.bar(features.keys(), features.values())
-    ax.set_title("Customer Profile")
+    fig2, ax2 = plt.subplots(figsize=(5,3))
+    ax2.bar(behavior_features.keys(), behavior_features.values())
+    ax2.set_title("Credit Behavior")
+    ax2.set_ylabel("Count")
 
-    st.pyplot(fig)
+    # Mostrar lado a lado (dashboard style)
+    col1, col2 = st.columns(2)
 
-    # 🔹 6. Gauge simple de riesgo
+    with col1:
+        st.pyplot(fig1)
+
+    with col2:
+        st.pyplot(fig2)
+
+    # 6. Gauge simple de riesgo
     st.subheader("Risk Visualization")
 
     fig2, ax2 = plt.subplots()
@@ -90,7 +109,7 @@ if st.button("Predict"):
 
     st.pyplot(fig2)
 
-    # 🔹 7. Explicación (muy pro)
+    # 7. Explicación 
     st.write(
         "This score estimates the likelihood that a customer will default "
         "based on financial behavior patterns."
